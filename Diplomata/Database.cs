@@ -2,6 +2,7 @@ using System.IO;
 using Diplomata.Models;
 using Godot;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Diplomata
 {
@@ -21,7 +22,19 @@ namespace Diplomata
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Example>(entity =>
+            BuildEntity<Example>(modelBuilder, entity =>
+            {
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasColumnType("TEXT")
+                    .HasMaxLength(256);
+
+                entity.HasIndex(e => e.Name).IsUnique();
+            });
+        }
+
+        private void BuildEntity<T>(ModelBuilder modelBuilder, System.Action<EntityTypeBuilder<T>> buildAction) where T : BaseModel {
+            modelBuilder.Entity<T>(entity =>
             {
                 entity.HasKey(e => e.Id);
 
@@ -41,13 +54,9 @@ namespace Diplomata
                     .HasDefaultValueSql("CURRENT_TIMESTAMP")
                     .ValueGeneratedOnAddOrUpdate();
 
-                entity.Property(e => e.Name)
-                    .IsRequired()
-                    .HasColumnType("TEXT")
-                    .HasMaxLength(256);
-
                 entity.HasIndex(e => e.Guid).IsUnique();
-                entity.HasIndex(e => e.Name).IsUnique();
+
+                buildAction.Invoke(entity);
             });
         }
     }
