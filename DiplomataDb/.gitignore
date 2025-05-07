@@ -1,5 +1,0 @@
-/config/.env.local
-/prisma/core.sqlite.prisma
-/dist
-*.db
-node_modules/

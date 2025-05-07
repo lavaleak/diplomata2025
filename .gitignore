@@ -1,2 +1,9 @@
+# Binaries build files
+dist/
+build/
+out/
+bin/
+
+# Misc
 .qodo/
-node_modules/
+*.db
