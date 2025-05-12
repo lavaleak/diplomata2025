@@ -12,19 +12,18 @@ namespace Diplomata.Editor.Utils
     public class EnvironmentLoader : IUtil
     {
         private Dictionary<string, string> _variables = null;
-        private string _envFilePath;
 
         private readonly string[] _KEYS_SCOPE = new[]{
             EnvVarKeys.STAGE,
         };
 
-        public EnvironmentLoader(string envFilePath = null)
+        public EnvironmentLoader(bool useDotEnvFile = false, string envFilePath = null, Dictionary<string, string> forceVariables = null)
         {
-            this._envFilePath = envFilePath == null ?
-                Path.Combine(Directory.GetCurrentDirectory(), ".env") : envFilePath;
             try
             {
-                Load();
+                envFilePath = envFilePath == null ?
+                Path.Combine(Directory.GetCurrentDirectory(), ".env") : envFilePath;
+                Load(useDotEnvFile, envFilePath, forceVariables);
             }
             catch (Exception err)
             {
@@ -39,20 +38,37 @@ namespace Diplomata.Editor.Utils
             return (T)(object)strValue;
         }
 
-        private void Load()
+        private void Load(bool useDotEnvFile, string envFilePath, Dictionary<string, string> forceVariables)
         {
             _variables = new Dictionary<string, string> { };
+            forceVariables = forceVariables == null ? new Dictionary<string, string> { } : forceVariables;
 
             var populateEnvFile = (string key) =>
             {
-                var fallbackValue = GetFallbackValue(key);
-                File.AppendAllText(_envFilePath, $"{key}=\"{fallbackValue}\"");
-                _variables.Add(key, fallbackValue);
+                try
+                {
+                    var fallbackValue = GetFallbackValue(key);
+                    if (useDotEnvFile)
+                    {
+                        File.AppendAllText(envFilePath, $"{key}=\"{fallbackValue}\"\n");
+                    }
+                    _variables.Add(key, fallbackValue);
+                }
+                catch (Exception err)
+                {
+                    Logger.Instance.LogErr(err);
+                }
             };
 
             foreach (var key in _KEYS_SCOPE)
             {
                 string value;
+
+                if (forceVariables.ContainsKey(key))
+                {
+                    _variables.Add(key, forceVariables[key]);
+                    continue;
+                }
 
                 value = System.Environment.GetEnvironmentVariable(key);
                 if (!string.IsNullOrEmpty(value))
@@ -61,14 +77,20 @@ namespace Diplomata.Editor.Utils
                     continue;
                 }
 
-                if (!File.Exists(_envFilePath))
+                if (!useDotEnvFile)
                 {
-                    File.Create(_envFilePath);
                     populateEnvFile.Invoke(key);
                     continue;
                 }
 
-                foreach (var line in File.ReadAllLines(_envFilePath))
+                if (!File.Exists(envFilePath))
+                {
+                    using (File.Create(envFilePath)) {};
+                    populateEnvFile.Invoke(key);
+                    continue;
+                }
+
+                foreach (var line in File.ReadAllLines(envFilePath))
                 {
                     if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("#"))
                     {
@@ -102,7 +124,7 @@ namespace Diplomata.Editor.Utils
             switch (key)
             {
                 case EnvVarKeys.STAGE:
-                    return "Local";
+                    return Constants.DEV;
                 default:
                     return null;
             }

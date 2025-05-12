@@ -4,10 +4,11 @@ using Godot;
 using Diplomata.Editor.Models.Database;
 using Diplomata.Editor.Utils;
 using Diplomata.Editor.GodotEngine.AutoLoads;
+using Diplomata.Editor.GodotEngine.Nodes;
 
 namespace Diplomata.Editor.GodotEngine.Scenes
 {
-    public partial class MainScene : Control
+    public partial class MainScene : UiBaseNode
     {
         private Label _exampleText;
         private Database _db;
@@ -15,9 +16,8 @@ namespace Diplomata.Editor.GodotEngine.Scenes
 
         public override void _Ready()
         {
-            var main = GetNode<Main>("/root/Main");
-            _db = main.Dependency<Database>();
-            _env = main.Dependency<EnvironmentLoader>();
+            _db = Main.Dependency<Database>();
+            _env = Main.Dependency<EnvironmentLoader>();
 
             var name = "Example Test";
             var example = new Example { Name = name };
