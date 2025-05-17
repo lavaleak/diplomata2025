@@ -1,8 +1,9 @@
 # Binaries build files
-dist/
 build/
 out/
 bin/
+dist/*
+!dist/.gitkeep
 
 # Misc
 .qodo/
